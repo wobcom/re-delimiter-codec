@@ -1,16 +1,16 @@
 [package]
-name = "memmem-delimiter-codec"
+name = "re-delimiter-codec"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
-description = "arbitrary-length delimiter codec for tokio using memchr"
+description = "tokio codec with bytes regular expression delimiter using regex crate"
 readme = "README.md"
-repository = "https://github.com/wobcom/memmem-delimiter-codec"
-keywords = [ "codec", "delimiter", "memmem", "tokio" ]
+repository = "https://github.com/wobcom/re-delimiter-codec"
+keywords = [ "codec", "delimiter", "regex", "tokio" ]
 categories = [ "encoding" ]
 
 [dependencies]
-memchr = "2.8.3"
+regex = "1.13.1"
 tokio-util = { version = "0.7.19", features = ["codec"] }
 
 [dev-dependencies]

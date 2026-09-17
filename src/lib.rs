@@ -121,7 +121,11 @@ mod tests {
 % Another comment
 
 
-ADD 65776764
+ADD 6577",
+            )
+            .read(
+                b"\
+6764
 
 object-typ:     yes
 garbled:        maybe
@@ -184,5 +188,32 @@ mixed-encoding: for sure
         );
 
         assert_matches!(reader.next().await, Some(Err(REDelimiterCodecError::Io(_))));
+    }
+
+    #[tokio::test]
+    async fn test_maximum_length_signalled_and_recovers() {
+        let message = Builder::new().read(b"dog;nutria;swan;duck;human;").build();
+        let message_1 = b"dog;";
+        let message_3 = b"swan;";
+
+        let mut reader = FramedRead::new(
+            message,
+            REDelimiterCodec::new_with_max_length(Regex::new(r";+").unwrap(), 6),
+        );
+
+        let bytes = reader.next().await.unwrap().unwrap();
+        let result = bytes.as_ref();
+        debug_assert_eq!(result.cmp(message_1), Ordering::Equal);
+
+        assert_matches!(
+            reader.next().await,
+            Some(Err(REDelimiterCodecError::MaxChunkLengthExceeded))
+        );
+
+        assert_matches!(reader.next().await, None);
+
+        let bytes = reader.next().await.unwrap().unwrap();
+        let result = bytes.as_ref();
+        debug_assert_eq!(result.cmp(message_3), Ordering::Equal);
     }
 }

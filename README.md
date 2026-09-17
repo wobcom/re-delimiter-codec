@@ -1,4 +1,5 @@
-# Multi-bytes Delimiter Codec
+# RE Delimiter Codec
 
-`memmem-delimiter-codec` is a multi-bytes delimiter codec library for use with tokio framework.
+`re-delimiter-codec` is a regular expression delimiter codec library for use with tokio framework.
+
 

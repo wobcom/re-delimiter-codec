@@ -4,6 +4,27 @@ use std::io::Error;
 use tokio_util::bytes::{Buf, Bytes, BytesMut};
 use tokio_util::codec::Decoder;
 
+/// Decoder for splitting data into chunks based on a variable delimiter represented by
+/// a regular expression. The regular expression should be a simple bytes [`Regex`].
+/// The same restrictions as the ones from the [`Regex`] module apply regarding backtracking
+/// and complexity. It is suggested to use as small and simple regular expressions as possible,
+/// as even while the compiled version is used, complex regular expressions can and will affect
+/// performance.
+///
+/// Ideally, the regular expression should only match the delimiter, not the full message.
+/// The resulting chunks will always include the matched delimiter.
+///
+/// # Example
+///
+/// This is an example for separating NRTMv2 and NRTMv3 messages in chunks.
+/// ```rust
+/// let mut reader = FramedRead::new(
+///    messages,
+///    REDelimiterCodec::new(Regex::new(r"(?R)\n[^%][^AD][^DE][^DL].*\n\n").unwrap()),
+/// );
+///
+/// let bytes = reader.next().await.unwrap().unwrap();
+/// ```
 #[derive(Clone)]
 pub struct REDelimiterCodec {
     regex: Regex,
@@ -12,6 +33,11 @@ pub struct REDelimiterCodec {
     max_length: usize,
 }
 
+/// Error type for [`REDelimiterCodec`]. IO Errors are transparently wrapped in the type.
+/// The [`REDelimiterCodecError::MaxChunkLengthExceeded`] error is emitted when the decoder
+/// hits the end of the buffer or the maximum allowed chunk length without a match (whichever
+/// comes first). It is a recoverable error, in that it is OK to continue reading from
+/// the instance of [`REDelimiterCodec`] if you receive it.
 #[derive(Debug)]
 pub enum REDelimiterCodecError {
     MaxChunkLengthExceeded,
@@ -25,6 +51,7 @@ impl From<Error> for REDelimiterCodecError {
 }
 
 impl REDelimiterCodec {
+    /// returns a [`REDelimiterCodec`]
     pub fn new(regex: Regex) -> Self {
         REDelimiterCodec {
             regex,
@@ -34,6 +61,7 @@ impl REDelimiterCodec {
         }
     }
 
+    /// returns a [`REDelimiterCodec`] with maximum chunk length of `max_length`
     pub fn new_with_max_length(regex: Regex, max_length: usize) -> Self {
         REDelimiterCodec {
             max_length,

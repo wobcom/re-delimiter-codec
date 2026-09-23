@@ -18,12 +18,20 @@ use tokio_util::codec::Decoder;
 ///
 /// This is an example for separating NRTMv2 and NRTMv3 messages in chunks.
 /// ```rust
-/// let mut reader = FramedRead::new(
-///    messages,
-///    REDelimiterCodec::new(Regex::new(r"(?R)\n[^%][^AD][^DE][^DL].*\n\n").unwrap()),
-/// );
+/// use crate::re_delimiter_codec::REDelimiterCodec;
+/// use tokio_util::codec::FramedRead;
+/// use tokio_stream::{Stream, StreamExt};
+/// use regex::bytes::Regex;
 ///
-/// let bytes = reader.next().await.unwrap().unwrap();
+/// #[tokio::main(flavor="current_thread")]
+/// async fn main() {
+///    let mut reader = FramedRead::new(
+///       &b"ADD 123\n\nsome: field\nanother: field\n\n"[..],
+///       REDelimiterCodec::new(Regex::new(r"(?R)\n[^%][^AD][^DE][^DL].*\n\n").unwrap()),
+///    );
+///
+///    let bytes = reader.next().await.unwrap().unwrap();
+/// }
 /// ```
 #[derive(Clone)]
 pub struct REDelimiterCodec {

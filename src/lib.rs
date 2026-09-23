@@ -127,6 +127,23 @@ impl Decoder for REDelimiterCodec {
             }
         }
     }
+
+    // from AnyDelimiterCodec
+    fn decode_eof(&mut self, buf: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
+        Ok(match self.decode(buf)? {
+            Some(frame) => Some(frame),
+            None => {
+                // return remaining data, if any
+                if buf.is_empty() {
+                    None
+                } else {
+                    let chunk = buf.split_to(buf.len());
+                    self.next_index = 0;
+                    Some(chunk.freeze())
+                }
+            }
+        })
+    }
 }
 
 #[cfg(test)]
@@ -216,6 +233,31 @@ mixed-encoding: for sure
         );
 
         assert_matches!(reader.next().await, Some(Err(REDelimiterCodecError::Io(_))));
+    }
+
+    #[tokio::test]
+    async fn test_remaining_bytes_consumed() {
+        let ioe = Builder::new().read(b"abc\ndef\nhij").build();
+        let message1 = b"abc\n";
+        let message2 = b"def\n";
+        let rest = b"hij";
+
+        let mut reader = FramedRead::new(ioe, REDelimiterCodec::new(Regex::new(r"\n").unwrap()));
+
+        assert_eq!(
+            reader.next().await.unwrap().unwrap().as_ref().cmp(message1),
+            Ordering::Equal
+        );
+        assert_eq!(
+            reader.next().await.unwrap().unwrap().as_ref().cmp(message2),
+            Ordering::Equal
+        );
+        assert_eq!(
+            reader.next().await.unwrap().unwrap().as_ref().cmp(rest),
+            Ordering::Equal
+        );
+
+        assert_matches!(reader.next().await, None);
     }
 
     #[tokio::test]

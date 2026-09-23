@@ -1,6 +1,6 @@
 [package]
 name = "re-delimiter-codec"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "MIT"
 description = "tokio codec with bytes regular expression delimiter using regex crate"
